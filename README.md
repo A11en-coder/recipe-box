@@ -76,3 +76,7 @@ Start with a text-only JSON request so the database flow is easy to check. Once 
 ## First task
 
 Draft the Prisma `Recipe` model and the shape of the create and list responses. Bring those to checkpoint 1 before setting up the database migration. Write the code yourself; I will review it and guide the next step.
+
+POST api/recipes will recieve title, ingredients, instructions, and optionally an image and description.
+
+GET api/recipes will return an array of recipes
