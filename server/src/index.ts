@@ -5,6 +5,23 @@ import { randomUUID } from "node:crypto";
 import { getPhotoUrl, getSupabaseStorage } from "./supabase";
 const app: Express = express();
 
+const allowedOrigins = new Set(["http://localhost:5173"]);
+if (process.env.CLIENT_ORIGIN) {
+  allowedOrigins.add(process.env.CLIENT_ORIGIN.replace(/\/$/, ""));
+}
+
+app.use((req: Request, res: Response, next: NextFunction) => {
+  const origin = req.headers.origin;
+  if (origin && allowedOrigins.has(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Vary", "Origin");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  }
+  if (req.method === "OPTIONS") return res.sendStatus(204);
+  next();
+});
+
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 },
@@ -125,4 +142,7 @@ app.use((error: unknown, req: Request, res: Response, next: NextFunction) => {
   next(error);
 });
 
-app.listen(3000);
+const port = Number(process.env.PORT) || 3000;
+app.listen(port, "0.0.0.0", () => {
+  console.log(`Recipe Box API listening on port ${port}`);
+});

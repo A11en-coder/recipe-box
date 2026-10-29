@@ -11,6 +11,8 @@ type Recipe = {
 
 const labelClass = "mb-2 block text-sm font-semibold text-[#550527]";
 const fieldClass = "w-full rounded-xl border border-[#688e26] bg-white px-4 py-3 text-sm text-[#550527] placeholder:text-[#688e26] outline-none transition focus:border-[#f44708] focus:ring-3 focus:ring-[#faa613]/35";
+const apiBaseUrl = import.meta.env.VITE_API_URL?.replace(/\/+$/, "") ?? "";
+const recipesUrl = `${apiBaseUrl}/api/recipes`;
 
 function App() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
@@ -21,7 +23,7 @@ function App() {
   useEffect(() => {
     const loadRecipes = async () => {
       try {
-        const response = await fetch("/api/recipes");
+        const response = await fetch(recipesUrl);
         if (!response.ok) throw new Error("Unable to load recipes");
 
         const data: unknown = await response.json();
@@ -47,7 +49,7 @@ function App() {
 
     const submitRecipeAsync = async () => {
       try {
-        const response = await fetch("/api/recipes", {
+        const response = await fetch(recipesUrl, {
           method: "POST",
           body: formData,
         });
