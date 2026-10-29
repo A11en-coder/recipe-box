@@ -22,6 +22,14 @@ The final local check must include at least one recipe with a photo. A simple â€
 - Database: PostgreSQL with Prisma for recipe data.
 - File storage: Supabase Storage for image files.
 
+## Supabase Storage setup
+
+The Express server uploads recipe photos to Supabase Storage. In your Supabase project, create a **public** bucket named `recipe-photos`. Set its allowed MIME types to `image/jpeg`, `image/png`, and `image/webp`, and its maximum file size to 5 MB. The bucket must be public for the returned `imageUrl` to work in the browser.
+
+In `server/.env`, set `SUPABASE_URL` to the project URL and `SUPABASE_SECRET_KEY` to a secret API key from the Supabase dashboard. The server also accepts the existing `NEXT_PUBLIC_SUPABASE_URL` value as the URL. Keep the secret key only in `server/.env`; never put it in frontend code or commit it. The publishable key alone cannot perform these server uploads unless you separately configure Storage access policies.
+
+Send a `multipart/form-data` POST to `/api/recipes` with text fields `title`, `ingredients`, `instructions`, optional `description`, and an optional file field named `photo`. Responses contain `imagePath` (the stored object name) and `imageUrl` (a browser-ready public URL, or `null` when there is no photo).
+
 ## Backend design: first checkpoint
 
 Before writing routes, sketch a `Recipe` model and explain each field. A starting shape is:

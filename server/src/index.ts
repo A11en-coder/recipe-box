@@ -1,6 +1,8 @@
 import express, { type Express, type NextFunction, type Request, type Response } from "express";
 import { prisma } from "./db";
 import multer from "multer";
+import { randomUUID } from "node:crypto";
+import { getPhotoUrl, getSupabaseStorage } from "./supabase";
 const app: Express = express();
 
 const upload = multer({
@@ -37,12 +39,30 @@ app.post("/api/recipes", upload.single("photo"), async (req: Request, res: Respo
     });
   }
 
-  // Do not save a recipe with a photo until the file can be stored in Supabase.
-  if (req.file) {
-    return res.status(501).json({ error: "Photo storage is not connected yet." });
+  const photo = req.file;
+  const extensions: Record<string, string> = {
+    "image/jpeg": "jpg",
+    "image/png": "png",
+    "image/webp": "webp",
+  };
+  if (photo && !extensions[photo.mimetype]) {
+    return res.status(400).json({ error: "Photo must be a JPEG, PNG, or WebP image." });
   }
 
+  let imagePath: string | null = null;
   try {
+    if (photo) {
+      imagePath = `${randomUUID()}.${extensions[photo.mimetype]}`;
+      const { error } = await getSupabaseStorage().upload(imagePath, photo.buffer, {
+        contentType: photo.mimetype,
+        upsert: false,
+      });
+      if (error) {
+        console.error("Error uploading photo:", error);
+        return res.status(502).json({ error: "Could not store the photo. Please try again." });
+      }
+    }
+
     // save the recipe to the database
     const recipe = await prisma.recipe.create({
       data: {
@@ -50,11 +70,19 @@ app.post("/api/recipes", upload.single("photo"), async (req: Request, res: Respo
         description: description ? description.trim() : null,
         ingredients: ingredients.trim(),
         instructions: instructions.trim(),
+        imagePath,
       },
     });
-    res.status(201).json(recipe);
+    res.status(201).json({ ...recipe, imageUrl: getPhotoUrl(recipe.imagePath) });
   } catch (error) {
     console.error("Error creating recipe:", error);
+    if (imagePath) {
+      try {
+        await getSupabaseStorage().remove([imagePath]);
+      } catch (cleanupError) {
+        console.error("Error removing an unused photo:", cleanupError);
+      }
+    }
     res
       .status(500)
       .json({ error: "An error occurred while creating the recipe." });
@@ -70,7 +98,10 @@ app.get("/api/recipes", async (req: Request, res: Response) => {
         createdAt: "desc",
       },
     });
-    res.status(200).json(recipes);
+    res.status(200).json(recipes.map((recipe) => ({
+      ...recipe,
+      imageUrl: getPhotoUrl(recipe.imagePath),
+    })));
   } catch (error) {
     console.error("Error fetching recipes:", error);
     res
