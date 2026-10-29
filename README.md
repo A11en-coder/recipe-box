@@ -1,6 +1,6 @@
 # Recipe Box
 
-A small, single-user local app for saving recipes with one photo each. Build the data and API first, then connect a React interface and style it with Tailwind CSS.
+A small, single-user local app for creating and saving recipes with one photo each.
 
 ## Main workflows
 
