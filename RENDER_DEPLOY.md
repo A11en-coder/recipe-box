@@ -1,71 +1,33 @@
 # Recipe Box demo on Render
 
-The repository contains two Render services. The API is a **Web Service** from `server/`; the React app is a **Static Site** from `client/`. Keep the existing Neon PostgreSQL database and Supabase Storage bucket.
+Recipe Box uses **one Render Web Service**. Express serves both the API and the built React page from the same URL. The browser keeps calling `/api/recipes`, so no proxy, CORS, or frontend URL setting is needed in production.
 
-Push your latest code to the `main` branch of `https://github.com/A11en-coder/recipe-box` before creating the services.
-
-## 1. Create the API
-
-In Render, choose **New → Web Service**, connect the `recipe-box` GitHub repository, and use:
+Push the latest repository code to GitHub first. Then choose **New → Web Service**, connect `A11en-coder/recipe-box`, and enter:
 
 | Setting | Value |
 | --- | --- |
-| Name | `recipe-box-api` (or another available name) |
-| Branch | `main` |
+| Name | `recipe-box` (or another available name) |
+| Project | Optional; your `recipe box / Demo` selection is fine |
 | Language | `Node` |
-| Root Directory | `server` |
-| Build Command | `npm ci --include=dev && npm run build && npx prisma migrate deploy` |
+| Branch | `main` |
+| Region | `Singapore` is a sensible choice for the existing Neon database in Sydney's region |
+| Root Directory | **Leave blank** |
+| Build Command | `npm run build` |
 | Start Command | `npm start` |
-| Health Check Path | `/health` |
 | Instance Type | `Free` for a personal demo |
 
-Add these **Environment** values to the API service:
+The root directory must be blank because the build needs both `server/` and `client/`. The root `build` script installs each app's dependencies and builds both. The server uses Render's `PORT` automatically.
+
+Add these environment variables on the **same Web Service**:
 
 | Key | Value |
 | --- | --- |
-| `NODE_VERSION` | `24.16.0` |
-| `DATABASE_URL` | Your current Neon connection string from `server/.env` |
-| `SUPABASE_URL` | Your Supabase project URL (the value currently named `NEXT_PUBLIC_SUPABASE_URL` locally) |
+| `DATABASE_URL` | The current Neon connection string from `server/.env` |
+| `SUPABASE_URL` | Your Supabase project URL (currently named `NEXT_PUBLIC_SUPABASE_URL` locally) |
 | `SUPABASE_SECRET_KEY` | Your Supabase secret API key from `server/.env` |
 
-Do not add `SUPABASE_SECRET_KEY` to the Static Site. Render provides `PORT`, so you do not need to set it. Deploy the API and copy its full `https://...onrender.com` URL. Visit `<API_URL>/health` and check that it says `Server is healthy!`.
+Do not copy `server/.env` into Git. The existing Neon database already has the Prisma migration applied, so this demo build does not need to run a migration. If you switch to a fresh database, run `npx prisma migrate deploy` from `server/` against that database before using the app.
 
-## 2. Create the frontend
+After the deploy, open the single Render URL. You can check `/health`, then add a recipe with a photo and refresh the page. The page and API should both be available from that one URL.
 
-Choose **New → Static Site**, connect the same repository, and use:
-
-| Setting | Value |
-| --- | --- |
-| Name | `recipe-box-client` (or another available name) |
-| Branch | `main` |
-| Root Directory | `client` |
-| Build Command | `npm ci && npm run build` |
-| Publish Directory | `dist` |
-
-Add these **Environment** values to the Static Site **before** its first build:
-
-| Key | Value |
-| --- | --- |
-| `NODE_VERSION` | `24.16.0` |
-| `VITE_API_URL` | The full API URL, such as `https://recipe-box-api.onrender.com`, with no `/api` suffix |
-
-The API URL is public and is bundled into the frontend. Never put `DATABASE_URL` or `SUPABASE_SECRET_KEY` in a `VITE_` variable. Deploy the Static Site and copy its full `https://...onrender.com` URL.
-
-## 3. Allow the frontend to call the API
-
-On the API Web Service, add one more Environment value:
-
-| Key | Value |
-| --- | --- |
-| `CLIENT_ORIGIN` | The frontend's full origin, such as `https://recipe-box-client.onrender.com`, with no trailing slash or path |
-
-Choose **Save, rebuild, and deploy**. The API accepts browser requests from this origin and from `http://localhost:5173` during local development.
-
-## 4. Check the demo
-
-1. Open the frontend URL and confirm the saved recipes load.
-2. Add a small JPEG, PNG, or WebP photo with a recipe.
-3. Refresh and confirm the photo and text remain.
-4. Check an unsupported file shows an error.
-
-The demo currently has no user accounts or write protection: anyone with its URL can add recipes and upload photos to your Supabase bucket. Use a dedicated demo database and bucket if you intend to share the link widely. Free Render web services may take time to wake after being idle.
+This demo has no user accounts or write protection: anyone with its URL can add recipes and upload photos. Use a dedicated demo database and bucket if you share the link widely. A Free web service can take time to wake after being idle.

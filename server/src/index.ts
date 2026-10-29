@@ -2,25 +2,9 @@ import express, { type Express, type NextFunction, type Request, type Response }
 import { prisma } from "./db";
 import multer from "multer";
 import { randomUUID } from "node:crypto";
+import { fileURLToPath } from "node:url";
 import { getPhotoUrl, getSupabaseStorage } from "./supabase";
 const app: Express = express();
-
-const allowedOrigins = new Set(["http://localhost:5173"]);
-if (process.env.CLIENT_ORIGIN) {
-  allowedOrigins.add(process.env.CLIENT_ORIGIN.replace(/\/$/, ""));
-}
-
-app.use((req: Request, res: Response, next: NextFunction) => {
-  const origin = req.headers.origin;
-  if (origin && allowedOrigins.has(origin)) {
-    res.setHeader("Access-Control-Allow-Origin", origin);
-    res.setHeader("Vary", "Origin");
-    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-  }
-  if (req.method === "OPTIONS") return res.sendStatus(204);
-  next();
-});
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -131,6 +115,10 @@ app.get("/api/recipes", async (req: Request, res: Response) => {
 app.get("/health", (req: Request, res: Response) => {
   res.send("Server is healthy!");
 });
+
+// Render serves the built React app and API from the same web service.
+const clientDist = fileURLToPath(new URL("../../client/dist/", import.meta.url));
+app.use(express.static(clientDist));
 
 app.use((error: unknown, req: Request, res: Response, next: NextFunction) => {
   if (error instanceof multer.MulterError) {
